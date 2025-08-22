@@ -6,19 +6,29 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('code');
-    if (!code) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
 
+    if (!code) {
+      alert('Missing LinkedIn authorization code');
+      return;
+    }
+
+    // Exchange code for tokens + user info
     axios.post('/api/auth/callback', { code })
       .then(res => {
-        localStorage.setItem('user', JSON.stringify(res.data.user));
-        navigate('/');
+        localStorage.setItem('user', JSON.stringify(res.data));
+        navigate('/dashboard');
       })
-      .catch(() => {
+      .catch(err => {
+        console.error('Auth error:', err);
         alert('Login failed');
-        navigate('/login');
       });
   }, [navigate]);
 
-  return <p>Logging you in...</p>;
+  return (
+    <div style={{ textAlign: 'center', paddingTop: '5rem' }}>
+      <h2>Authenticating with LinkedIn...</h2>
+    </div>
+  );
 }
