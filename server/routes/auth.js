@@ -3,6 +3,7 @@ const axios = require('axios');
 const sql = require('mssql');
 const router = express.Router();
 
+// Load environment variables
 const {
   LINKEDIN_CLIENT_ID,
   LINKEDIN_CLIENT_SECRET,
@@ -13,6 +14,7 @@ const {
   AZURE_SQL_DATABASE
 } = process.env;
 
+// Azure SQL config
 const dbConfig = {
   user: AZURE_SQL_USER,
   password: AZURE_SQL_PASSWORD,
@@ -25,16 +27,18 @@ const dbConfig = {
 };
 
 router.post('/callback', async (req, res) => {
+  console.log('🔥 /api/auth/callback hit');
+
   const { code } = req.body;
-  console.log('🔐 Received code:', code);
+  console.log('📥 Code received:', code);
 
   if (!code) {
-    console.error('⛔ Missing authorization code');
-    return res.status(400).json({ error: 'Missing code' });
+    console.error('❌ Missing LinkedIn code');
+    return res.status(400).json({ error: 'Missing LinkedIn authorization code' });
   }
 
   try {
-    // 1. Exchange code for access token
+    console.log('📡 Requesting LinkedIn access token...');
     const tokenRes = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', null, {
       params: {
         grant_type: 'authorization_code',
@@ -43,14 +47,12 @@ router.post('/callback', async (req, res) => {
         client_id: LINKEDIN_CLIENT_ID,
         client_secret: LINKEDIN_CLIENT_SECRET
       },
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
 
     const accessToken = tokenRes.data.access_token;
+    console.log('🔑 LinkedIn access token received:', accessToken);
 
-    // 2. Fetch user info from LinkedIn
     const profileRes = await axios.get('https://api.linkedin.com/v2/userinfo', {
       headers: {
         Authorization: `Bearer ${accessToken}`
@@ -58,11 +60,11 @@ router.post('/callback', async (req, res) => {
     });
 
     const profile = profileRes.data;
-    console.log('👤 LinkedIn profile:', profile);
+    console.log('🧠 LinkedIn profile:', profile);
 
-    // 3. Connect to Azure SQL
-    const pool = await sql.connect(dbConfig);
-    const request = pool.request();
+    // Connect to Azure SQL
+    await sql.connect(dbConfig);
+    const request = new sql.Request();
 
     const result = await request
       .input('linkedin_id', sql.NVarChar, profile.sub)
@@ -77,12 +79,11 @@ router.post('/callback', async (req, res) => {
         END
       `);
 
-    console.log('✅ SQL rows affected:', result.rowsAffected);
+    console.log('📥 SQL rows affected:', result.rowsAffected);
 
     res.json({ user: profile });
-
   } catch (err) {
-    console.error('❌ Auth error:', err?.response?.data || err.message);
+    console.error('❌ Auth error:', err?.response?.data || err.message || err);
     res.status(500).json({ error: 'LinkedIn auth failed' });
   }
 });

@@ -1,25 +1,37 @@
 const sql = require('mssql');
+require('dotenv').config();
 
-const config = {
-  user: process.env.SQL_USER,
-  password: process.env.SQL_PASSWORD,
-  server: process.env.SQL_SERVER,
-  database: process.env.SQL_DATABASE,
+const {
+  AZURE_SQL_SERVER,
+  AZURE_SQL_DATABASE,
+  AZURE_SQL_USER,
+  AZURE_SQL_PASSWORD
+} = process.env;
+
+if (!AZURE_SQL_SERVER || typeof AZURE_SQL_SERVER !== 'string') {
+  console.error('❌ Missing or invalid AZURE_SQL_SERVER in .env');
+  process.exit(1);
+}
+
+const dbConfig = {
+  user: AZURE_SQL_USER,
+  password: AZURE_SQL_PASSWORD,
+  server: AZURE_SQL_SERVER,
+  database: AZURE_SQL_DATABASE,
   options: {
-    encrypt: process.env.SQL_ENCRYPT === 'true',
-    enableArithAbort: true,
-  },
+    encrypt: true,
+    trustServerCertificate: false
+  }
 };
 
-const pool = new sql.ConnectionPool(config);
-const poolConnect = pool.connect();
-
-pool.on('error', err => {
-  console.error('SQL errors', err);
+// Test connection immediately
+const pool = new sql.ConnectionPool(dbConfig);
+const poolConnect = pool.connect().catch((err) => {
+  console.error('❌ SQL Connection Failed:', err);
 });
 
 module.exports = {
   sql,
-  poolConnect,
   pool,
+  poolConnect
 };
