@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { poolConnect, sql } = require('../services/db');
+const { poolConnect, sql, pool } = require('../services/db'); // 🟢 Add `pool`
 
 // GET /api/users
 router.get('/', async (req, res) => {
   try {
-    await poolConnect;
-    const request = new sql.Request();
+    await poolConnect; // Ensure DB is connected
+    const request = pool.request(); // ✅ Use the active pool connection
     const result = await request.query('SELECT * FROM Users');
 
     res.json(result.recordset);
