@@ -9,14 +9,15 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 
+const userRoutes = require('./routes/users');
+app.use('/api/users', userRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'THIS IS BULLSHIT!!!! Server is running ✅' });
+  res.json({ status: 'Yes, the server is running ✅' });
 });
 
-app.get('/dan', (req, res) => {
-  res.json({ status: 'THIS IS BULLSHIT!!!! Server is running ✅' });
-});
+
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
@@ -29,3 +30,6 @@ app.listen(PORT, async () => {
 
   console.log(`Server listening on port ${PORT}`);
 });
+
+
+// version 0.1.0 
